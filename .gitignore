@@ -1,0 +1,10 @@
+# Never commit real payroll data. Only the fake files in samples/ are tracked.
+*.csv
+*.CSV
+!samples/*.csv
+local_settings.json
+
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/

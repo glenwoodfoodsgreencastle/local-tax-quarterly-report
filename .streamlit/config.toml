@@ -1,0 +1,12 @@
+# Keep the app private to this computer.
+[server]
+address = "localhost"        # not reachable from other machines on the network
+showEmailPrompt = false
+maxUploadSize = 50
+
+[browser]
+gatherUsageStats = false     # no usage telemetry
+serverAddress = "localhost"
+
+[client]
+toolbarMode = "minimal"      # hides the "Deploy" button
