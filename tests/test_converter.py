@@ -155,3 +155,28 @@ def test_missing_header_raises():
         load_employee_info("a,b,c\n1,2,3\n")
     with pytest.raises(InputError):
         parse_local_tax_summary("nothing,here\n")
+
+
+def test_employee_info_extras_are_quiet():
+    # Inactive employees without SSNs, and duplicates of people not in the
+    # tax summary, produce no warnings.
+    extra = (
+        EMPLOYEES
+        + "INACTIVE PERSON,,9 PINE ST,,WAYNESBORO,PA,17268,280504\n"
+        + "OTHER PERSON,900-00-0099,1 A ST,,WAYNESBORO,PA,17268,280504\n"
+        + "OTHER PERSON,900-00-0099,1 A ST,,WAYNESBORO,PA,17268,280504\n"
+    )
+    emps, issues = load_employee_info(extra)
+    assert issues == []
+    result = build_filing(emps, parse_local_tax_summary(SUMMARY), OPTS)
+    assert len(result.rows) == 3
+    assert not [i for i in result.issues if "0099" in i.masked_ssn or not i.ssn and i.severity != "error"]
+
+
+def test_duplicate_ssn_in_summary_prefers_valid_psd():
+    dup = EMPLOYEES + "JOHN A. SMITH,900-00-0001,1 MAIN ST,,GREENCASTLE,PA,17225,\n"
+    emps, _ = load_employee_info(dup)
+    assert emps["900000001"].psd == "280301"
+    result = build_filing(emps, parse_local_tax_summary(SUMMARY), OPTS)
+    warn = [i for i in result.issues if "appears 2 times" in i.message]
+    assert len(warn) == 1 and warn[0].row == 1

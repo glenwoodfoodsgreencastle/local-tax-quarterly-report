@@ -65,7 +65,7 @@ The first run creates a `.venv` folder and installs Streamlit. After that, the a
 | Resident PSD | `Township Code` from the employee info file. Out-of-state employees with a blank code get `880000`. |
 | Work PSD | From the settings (default `280301`) |
 
-Each employee in the tax summary produces one row. People who appear only in the employee info file are left out.
+Each employee in the tax summary produces one row. The employee info file can list every employee, active or inactive (so people who quit during the quarter are still matched). Rows for people not in the tax summary, including rows with no SSN, are ignored without warnings. If an SSN appears more than once, the row with a valid Township Code is used.
 
 The app flags these problems:
 

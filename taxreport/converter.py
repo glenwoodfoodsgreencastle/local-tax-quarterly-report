@@ -89,6 +89,7 @@ class Employee:
     state: str
     zip: str
     psd: str
+    duplicates: int = 0  # extra rows with the same SSN in the employee info file
 
 
 @dataclass
@@ -250,9 +251,8 @@ def load_employee_info(data: bytes | str) -> tuple[dict[str, Employee], list[Iss
         ssn = normalize_ssn(raw_ssn)
         name = _cell(row, col["name"])
         if not ssn:
-            issues.append(
-                Issue("warning", f"Employee info row skipped: invalid SSN {raw_ssn!r}.", name)
-            )
+            # The file lists every employee, active or not. A row without an
+            # SSN can't match anyone in the tax summary, so it is ignored.
             continue
         emp = Employee(
             name=name,
@@ -264,17 +264,15 @@ def load_employee_info(data: bytes | str) -> tuple[dict[str, Employee], list[Iss
             zip=_cell(row, col["zip"]),
             psd=_cell(row, col["psd"]),
         )
-        if ssn in employees:
-            issues.append(
-                Issue(
-                    "warning",
-                    "SSN appears more than once in the employee info file; "
-                    "the last row was used.",
-                    name,
-                    ssn,
-                )
-            )
+        prev = employees.get(ssn)
+        if prev:
+            # Keep the row with a usable PSD; otherwise the later row.
+            keep = prev if is_valid_psd(prev.psd) and not is_valid_psd(emp.psd) else emp
+            keep.duplicates = prev.duplicates + 1
+            emp = keep
         employees[ssn] = emp
+    # Problems are reported by build_filing, and only for employees who are
+    # in the tax summary.
     return employees, issues
 
 
@@ -458,6 +456,12 @@ def build_filing(
         def issue(severity: str, message: str) -> None:
             issues.append(Issue(severity, message, name, ssn, row_no))
 
+        if emp and emp.duplicates:
+            issue(
+                "warning",
+                f"SSN appears {emp.duplicates + 1} times in the employee info file; "
+                "used the row with a valid Township Code (or the last row).",
+            )
         if t.eit_rows > 1 or t.lst_rows > 1:
             issue("info", "Employee has more than one line in a tax section; amounts were added together.")
 
