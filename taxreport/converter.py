@@ -48,6 +48,9 @@ TEMPLATE_COLUMNS = [
     "Work PSD",
 ]
 
+# Work location PSD used unless another is entered.
+DEFAULT_WORK_PSD = "280301"
+
 # PA DCED PSD code used for residents of other states.
 OUT_OF_STATE_PSD = "880000"
 

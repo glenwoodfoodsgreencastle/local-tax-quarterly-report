@@ -1,10 +1,11 @@
-"""Command-line version: python -m taxreport EMPLOYEE_INFO SUMMARY --year Y --quarter Q --work-psd PSD -o OUT."""
+"""Command-line version: python -m taxreport EMPLOYEE_INFO SUMMARY --year Y --quarter Q [--work-psd PSD] -o OUT."""
 
 import argparse
 import sys
 from pathlib import Path
 
 from .converter import (
+    DEFAULT_WORK_PSD,
     FilingOptions,
     InputError,
     build_filing,
@@ -22,7 +23,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--year", required=True)
     p.add_argument("--quarter", required=True, choices=["1", "2", "3", "4"])
     p.add_argument("--month", default="", help="Tax Month (optional)")
-    p.add_argument("--work-psd", required=True, help="6-digit PSD code of the work location")
+    p.add_argument("--work-psd", default=DEFAULT_WORK_PSD, help=f"6-digit PSD code of the work location (default {DEFAULT_WORK_PSD})")
     p.add_argument("--ssn-digits-only", action="store_true", help="Write SSNs as 123456789")
     p.add_argument("-o", "--output", type=Path, required=True)
     args = p.parse_args(argv)

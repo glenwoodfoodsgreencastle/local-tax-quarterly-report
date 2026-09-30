@@ -17,6 +17,7 @@ import pandas as pd
 import streamlit as st
 
 from taxreport.converter import (
+    DEFAULT_WORK_PSD,
     TEMPLATE_COLUMNS,
     FilingOptions,
     InputError,
@@ -71,7 +72,7 @@ with st.sidebar:
         help="Leave blank for a quarterly filing.",
     )
     work_psd = st.text_input(
-        "Work PSD", value=settings.get("work_psd", ""), max_chars=6,
+        "Work PSD", value=settings.get("work_psd", DEFAULT_WORK_PSD), max_chars=6,
         help="6-digit PSD code for the work location. Saved on this computer for next time.",
     ).strip()
     if work_psd and not is_valid_psd(work_psd):

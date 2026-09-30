@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  Privacy lock: the page may only load its own files from this site and may
+  not send data anywhere else. Pyodide needs 'wasm-unsafe-eval' to run
+  WebAssembly. There are no forms, so nothing can be submitted.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self'; img-src 'self' data:; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Local Tax Quarterly Report</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>Local Tax Quarterly Report</h1>
+    <p class="privacy">
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5Zm-3 8V7a3 3 0 1 1 6 0v3H9Z"/></svg>
+      Runs entirely in your browser. Files you choose are never uploaded or saved.
+      <a href="#verify">How to verify</a>
+    </p>
+  </div>
+</header>
+
+<main class="wrap">
+  <p id="status" class="status loading" role="status">Loading Python…</p>
+
+  <section class="card" aria-labelledby="h-details">
+    <h2 id="h-details"><span class="step">1</span> Filing details</h2>
+    <div class="grid settings">
+      <label>Tax Year
+        <input id="tax-year" type="number" min="2000" max="2100" step="1">
+      </label>
+      <label>Tax Quarter
+        <select id="tax-quarter">
+          <option>1</option><option>2</option><option>3</option><option>4</option>
+        </select>
+      </label>
+      <label><span>Tax Month <span class="optional">(optional)</span></span>
+        <select id="tax-month">
+          <option value="">(blank)</option>
+          <option>1</option><option>2</option><option>3</option><option>4</option>
+          <option>5</option><option>6</option><option>7</option><option>8</option>
+          <option>9</option><option>10</option><option>11</option><option>12</option>
+        </select>
+      </label>
+      <label>Work PSD
+        <input id="work-psd" type="text" inputmode="numeric" maxlength="6" autocomplete="off">
+        <span id="work-psd-error" class="field-error" hidden>Must be 6 digits.</span>
+      </label>
+      <label class="check">
+        <input id="ssn-digits" type="checkbox"> Write SSNs without dashes
+      </label>
+    </div>
+    <p class="hint">Work PSD and SSN format are remembered in this browser. No employee data is stored.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-files">
+    <h2 id="h-files"><span class="step">2</span> Choose files</h2>
+    <div class="grid files">
+      <label class="drop" id="drop-emp">
+        <input id="file-emp" type="file" accept=".csv,text/csv">
+        <strong>Employee info CSV</strong>
+        <span class="file-name" id="name-emp">Click to choose or drop a file here</span>
+      </label>
+      <label class="drop" id="drop-summary">
+        <input id="file-summary" type="file" accept=".csv,text/csv">
+        <strong>Local Tax Summary CSV</strong>
+        <span class="file-name" id="name-summary">Click to choose or drop a file here</span>
+      </label>
+    </div>
+    <p id="load-error" class="banner error" hidden></p>
+  </section>
+
+  <div id="results" hidden>
+    <section class="card" aria-labelledby="h-sections">
+      <h2 id="h-sections"><span class="step">3</span> Tax summary sections</h2>
+      <p class="hint">Every EIT section is added into “EIT Withheld” and the LST section into “LST Withheld”.</p>
+      <div id="sections" class="sections"></div>
+    </section>
+
+    <section class="card" aria-labelledby="h-review">
+      <h2 id="h-review"><span class="step">4</span> Review</h2>
+      <div id="review-banners"></div>
+      <div class="table-scroll short" id="issues-wrap">
+        <table class="issues">
+          <thead><tr><th>Severity</th><th>Row</th><th>Employee</th><th>SSN</th><th>Message</th></tr></thead>
+          <tbody id="issues"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-data">
+      <h2 id="h-data"><span class="step">5</span> Filing data</h2>
+      <p class="hint">Click any cell to edit it. Row numbers match the Review list. Cells outlined in red are invalid (hover to see why).</p>
+      <div class="table-scroll tall">
+        <table class="data" id="data"></table>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="h-download">
+      <h2 id="h-download"><span class="step">6</span> Check totals and download</h2>
+      <div class="metrics">
+        <div><span class="label">Employees</span><span class="value" id="m-count">0</span></div>
+        <div><span class="label">Local Wages</span><span class="value" id="m-wages">$0.00</span></div>
+        <div><span class="label">EIT Withheld</span><span class="value" id="m-eit">$0.00</span></div>
+        <div><span class="label">LST Withheld</span><span class="value" id="m-lst">$0.00</span></div>
+      </div>
+      <table class="recon">
+        <thead><tr><th>Tax</th><th>Tax summary total</th><th>Filing total</th><th>Match</th></tr></thead>
+        <tbody id="recon"></tbody>
+      </table>
+      <div id="download-banners"></div>
+      <div class="actions">
+        <button id="download" class="primary" type="button">Download filing CSV</button>
+        <button id="clear" type="button">Clear everything</button>
+      </div>
+    </section>
+  </div>
+
+  <section class="card verify" id="verify" aria-labelledby="h-verify">
+    <h2 id="h-verify">How your data stays private</h2>
+    <ul>
+      <li>This page is a set of static files. Python runs inside your browser using <a href="https://pyodide.org">Pyodide</a>, which is served from this same site.</li>
+      <li>When you choose a file, the browser reads it into this tab’s memory. The conversion runs in the tab, and the CSV download is created in the tab.</li>
+      <li>The page’s Content Security Policy tells the browser to block any connection to other websites, and there is no server here that accepts uploads.</li>
+      <li>Nothing about employees is written to storage. Closing the tab or clicking <em>Clear everything</em> discards it.</li>
+    </ul>
+    <p><strong>Check it yourself:</strong> open the browser’s developer tools (F12), go to the <em>Network</em> tab, then choose your files and download the result. No requests should appear after the page finishes loading.</p>
+  </section>
+</main>
+</body>
+</html>

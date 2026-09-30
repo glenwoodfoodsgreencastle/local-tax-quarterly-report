@@ -8,3 +8,7 @@ __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
+
+# Built GitHub Pages site and downloaded Pyodide
+_site/
+.cache/
