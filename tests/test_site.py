@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from tests.test_converter import EMPLOYEES, SUMMARY
 from taxreport.converter import (
     FilingOptions,
     build_filing,
@@ -24,7 +25,6 @@ playwright = pytest.importorskip("playwright.sync_api")
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "_site"
-SAMPLES = ROOT / "samples"
 
 pytestmark = pytest.mark.skipif(
     not (SITE / "pyodide" / "pyodide.mjs").exists(), reason="run build_site.py first"
@@ -64,13 +64,17 @@ def test_site_builds_filing_in_browser(site_url, browser, tmp_path):
 
     page.fill("#tax-year", "2026")
     page.select_option("#tax-quarter", "3")
-    page.set_input_files("#file-emp", str(SAMPLES / "employee_info_sample.csv"))
-    page.set_input_files("#file-summary", str(SAMPLES / "LocalTax_Summary_sample.csv"))
+    # Fake data only; see tests/test_converter.py.
+    emp_csv, summary_csv = tmp_path / "employees.csv", tmp_path / "summary.csv"
+    emp_csv.write_text(EMPLOYEES)
+    summary_csv.write_text(SUMMARY)
+    page.set_input_files("#file-emp", str(emp_csv))
+    page.set_input_files("#file-summary", str(summary_csv))
     page.wait_for_selector("#results:not([hidden])", timeout=30_000)
 
-    assert page.text_content("#m-count") == "50"
-    assert page.text_content("#m-eit") == "$3,312.76"
-    assert page.text_content("#m-lst") == "$592.00"
+    assert page.text_content("#m-count") == "3"
+    assert page.text_content("#m-eit") == "$44.00"
+    assert page.text_content("#m-lst") == "$32.00"
     assert page.locator("#recon .match-no").count() == 0
 
     with page.expect_download() as info:
@@ -79,14 +83,14 @@ def test_site_builds_filing_in_browser(site_url, browser, tmp_path):
     out = tmp_path / "filing.csv"
     info.value.save_as(out)
 
-    employees, _ = load_employee_info((SAMPLES / "employee_info_sample.csv").read_bytes())
-    sections = parse_local_tax_summary((SAMPLES / "LocalTax_Summary_sample.csv").read_bytes())
+    employees, _ = load_employee_info(EMPLOYEES)
+    sections = parse_local_tax_summary(SUMMARY)
     expected = to_csv(build_filing(employees, sections, FilingOptions("2026", "3", "280301")).rows)
     assert out.read_bytes().decode("utf-8") == expected
 
     # Editing a cell updates validation.
     bad_before = page.locator("td.bad").count()
-    cell = page.locator('tr[data-row="1"] td[data-col="Resident PSD"]')
+    cell = page.locator('td.bad[data-col="Resident PSD"]').first
     cell.click()
     page.keyboard.press("Control+A")
     page.keyboard.type("280404")

@@ -16,7 +16,7 @@ There are two ways to use it. Both use the same conversion code (`taxreport/conv
 
 **Local app.** Streamlit starts a web server that listens only on `localhost`. Files stay in the memory of that local Python process. Usage telemetry and the Deploy button are turned off in `.streamlit/config.toml`.
 
-**Repository.** `.gitignore` blocks every `*.csv` except the fake files in `samples/`, so real payroll files can't be committed by accident. The repository is public, so the code is visible to anyone, but it contains no employee data.
+**Repository.** `.gitignore` blocks every `*.csv` except `samples/FilingTemplate.csv`, so real payroll files can't be committed by accident. The repository is public, so the code is visible to anyone, but it contains no employee data. The tests use small made-up records defined in `tests/test_converter.py`.
 
 ## Using it
 
@@ -25,7 +25,6 @@ There are two ways to use it. Both use the same conversion code (`taxreport/conv
 3. Work through the **Review** list. Clicking an item in the web version jumps to that row. Click any cell in the **Filing data** table to fix it. Invalid cells are outlined in red.
 4. Check that the EIT and LST totals match the tax summary, then click **Download filing CSV**.
 
-To try it out, use the fake files in `samples/`. Their SSNs are in the never-issued 900 range.
 
 ## Web version setup (one time)
 

@@ -155,15 +155,3 @@ def test_missing_header_raises():
         load_employee_info("a,b,c\n1,2,3\n")
     with pytest.raises(InputError):
         parse_local_tax_summary("nothing,here\n")
-
-
-def test_sample_files_reconcile():
-    emps, _ = load_employee_info((SAMPLES / "employee_info_sample.csv").read_bytes())
-    sections = parse_local_tax_summary((SAMPLES / "LocalTax_Summary_sample.csv").read_bytes())
-    result = build_filing(emps, sections, OPTS)
-    t = totals(result.rows)
-    eit = next(s for s in sections if s.kind == "EIT")
-    lst = next(s for s in sections if s.kind == "LST")
-    assert t["EIT Withheld"] == eit.reported_tax == Decimal("3312.76")
-    assert t["LST Withheld"] == lst.reported_tax == Decimal("592.00")
-    assert len(result.rows) == 50
